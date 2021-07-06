@@ -6,7 +6,7 @@ from typing import List
 
 _printable_character_set = set(string.printable)
 
-DB_FILE = "processed.db"
+DB_FILE = "data/processed.db"
 
 
 class Clipping():
@@ -29,9 +29,21 @@ class Clipping():
         return f"{s.book_title} - {s.author} - {s.location} - {s.date_highlighted.isoformat()} - {no_newline_body}"
 
 
+def _sanitize_raw_clipping(raw_clipping: str) -> str:
+    special_chars = {
+        "—": "-"
+    }
+
+    sanitized = raw_clipping
+    sanitized = [special_chars[c]
+                 if c in special_chars else c for c in sanitized]
+    sanitized = [c for c in sanitized if c in _printable_character_set]
+
+    return ''.join(sanitized)
+
+
 def _process_raw_clipping(raw_clipping: str) -> Clipping:
-    sanitized = ''.join(
-        c for c in raw_clipping if c in _printable_character_set)
+    sanitized = _sanitize_raw_clipping(raw_clipping)
 
     # get header and quote body
     [header, quote_body] = sanitized.split("\n\n")
@@ -94,6 +106,9 @@ def get_oldest_unprocessed_clipping() -> Clipping:
     for clip in clippings:
         if clip.get_id() not in contents:
             return clip
+
+    # if we get here then it means we have no oldest unprocessed clip
+    raise Exception("There is no unprocessed clipping!")
 
 
 def mark_clipping_as_processed(clip: Clipping) -> None:
