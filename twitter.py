@@ -11,7 +11,7 @@ api = tweepy.API(auth)
 
 
 def post_tweet(clip: Clipping):
-    tweet = f"{clip.body}\n\n{clip.book_title} ({clip.author})"
+    tweet = f"{clip.body}\n\n{clip.book_title} ({clip.author})\n{c.HASHTAGS}"
 
     # respect twitter max tweet length
     if len(tweet) > 280:
