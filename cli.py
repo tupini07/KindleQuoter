@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import click
 from colorama import Back, Fore
 
@@ -19,10 +21,12 @@ def post_single_quote(skip):
 
     unprocessed_clip = data.get_oldest_unprocessed_clipping()
 
+    print(Fore.YELLOW + datetime.now().isoformat())
+
     if not skip:
         twitter.post_tweet(unprocessed_clip)
         print(Fore.GREEN + "Tweet posted!")
-    else: 
+    else:
         print(Fore.YELLOW + "Skipping tweet!")
         print(Fore.LIGHTCYAN_EX + Back.MAGENTA + unprocessed_clip.body)
 
