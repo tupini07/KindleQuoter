@@ -4,6 +4,8 @@ import string
 from datetime import datetime
 from typing import List
 
+import constants as c
+
 _printable_character_set = set(string.printable)
 
 DB_FILE = "data/processed.db"
@@ -53,6 +55,13 @@ def _process_raw_clipping(raw_clipping: str) -> Clipping:
     # get the title and author
     title_author_search = re.search(r'^(.*) \((.*)\)$', title_part)
     [title, author] = title_author_search.groups()
+
+    # Do swaps for title and author if necessary
+    if title_swap := c.TITLE_SWAPS.get(title):
+        title = title_swap
+
+    if author_swap := c.AUTHOR_SWAPS.get(author):
+        author = author_swap
 
     # get the location and highlight date
     location_date_search = re.search(
