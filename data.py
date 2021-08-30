@@ -133,3 +133,15 @@ def mark_clipping_as_processed(clip: Clipping) -> None:
                 "Trying to add clipping to DB but there's already an entry for it. Clipping id: " + clip_id)
 
         db_file.write(clip_id + '\n')
+
+def get_clippings_marked_for_skipping() -> List[Clipping]:
+    clippings = _read_clippings_file()
+    to_skip = []
+    
+    for clip in clippings:
+        if clip.book_title.startswith(">> "):
+            # remove the marker
+            clip.book_title = clip.book_title[3:]
+            to_skip.append(clip)
+
+    return to_skip

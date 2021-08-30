@@ -13,6 +13,23 @@ def cli():
 
 
 @cli.command()
+def skip_selected():
+    """
+    Add marked quotes as skipped
+
+    Prepend any "quote(s)" in "My Clippings.txt" with `>> ` (without backticks) and it will
+    be added as an already processed quote. Useful when reviewing clippings for stuff that 
+    shouldn't be posted.
+    """
+    to_skip = data.get_clippings_marked_for_skipping()
+    print(Fore.YELLOW + datetime.now().isoformat())
+    print(Fore.GREEN + f"Adding {len(to_skip)} as processed tweets")
+
+    for clip in to_skip:
+        data.mark_clipping_as_processed(clip)
+
+
+@cli.command()
 @click.option('--skip', is_flag=True, help="If specified, the next clipping will be marked as processed but won't actually be posted to twitter")
 def post_single_quote(skip):
     """
