@@ -31,12 +31,17 @@ def skip_selected():
 
 @cli.command()
 @click.option('--skip', is_flag=True, help="If specified, the next clipping will be marked as processed but won't actually be posted to twitter")
-def post_single_quote(skip):
+@click.option('--only-print', is_flag=True, help="Only print the tweet to console and don't do anything else")
+def post_single_quote(skip, only_print):
     """
     Posts a single unprocessed quote to Twitter
     """
 
     unprocessed_clip = data.get_oldest_unprocessed_clipping()
+
+    if only_print:
+        print(unprocessed_clip)
+        return
 
     print(Fore.YELLOW + datetime.now().isoformat())
 

@@ -30,6 +30,9 @@ class Clipping():
         no_newline_body = ''.join(x for x in s.body if x != '\n')
         return f"{s.book_title} - {s.author} - {s.location} - {s.date_highlighted.isoformat()} - {no_newline_body}"
 
+    def __str__(self):
+        return f"<Clipping @book_title='{self.book_title}' @author='{self.author}' @body='{self.body}'>"
+
 
 def _sanitize_raw_clipping(raw_clipping: str) -> str:
     special_chars = {
@@ -94,9 +97,12 @@ def _read_clippings_file() -> List[Clipping]:
             if "your bookmark on" in rc.lower():
                 continue
 
-            processed_clippings.append(
-                _process_raw_clipping(rc)
-            )
+            try:
+                processed_clippings.append(
+                    _process_raw_clipping(rc)
+                )
+            except:
+                raise AttributeError("Error while processing clipping:\n" + rc)
 
         # sort read clippings by date (from oldest to newest)
         return sorted(processed_clippings, key=lambda x: x.date_highlighted)
@@ -134,10 +140,11 @@ def mark_clipping_as_processed(clip: Clipping) -> None:
 
         db_file.write(clip_id + '\n')
 
+
 def get_clippings_marked_for_skipping() -> List[Clipping]:
     clippings = _read_clippings_file()
     to_skip = []
-    
+
     for clip in clippings:
         if clip.book_title.startswith(">> "):
             # remove the marker
