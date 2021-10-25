@@ -19,12 +19,12 @@ class Clipping():
     body: str
 
     def __init__(self, book_title: str, author: str, location: str, date_highlighted: str, body: str):
-        self.book_title = book_title
-        self.author = author
-        self.location = location
+        self.book_title = book_title.strip()
+        self.author = author.strip()
+        self.location = location.strip()
         self.date_highlighted = datetime.strptime(
             date_highlighted, "%B %d, %Y %I:%M:%S %p")
-        self.body = body
+        self.body = body.strip()
 
     def get_id(s) -> str:
         no_newline_body = ''.join(x for x in s.body if x != '\n')
@@ -109,6 +109,10 @@ def _read_clippings_file() -> List[Clipping]:
 
 
 def get_oldest_unprocessed_clipping() -> Clipping:
+    return get_n_oldest_unprocessed_tweets(1)[0]
+
+
+def get_n_oldest_unprocessed_tweets(n: int) -> List[Clipping]:
     clippings = _read_clippings_file()
 
     # if we have no DB file then we know oldest clipping hasn't been processed
@@ -118,12 +122,18 @@ def get_oldest_unprocessed_clipping() -> Clipping:
     with open(DB_FILE, 'r') as db_file:
         contents = db_file.read().split("\n")
 
+    result = []
     for clip in clippings:
+        if len(result) >= n:
+            break
         if clip.get_id() not in contents:
-            return clip
+            result.append(clip)
 
-    # if we get here then it means we have no oldest unprocessed clip
-    raise Exception("There is no unprocessed clipping!")
+    if len(result) == 0:
+        # if we get here then it means we have no oldest unprocessed clip
+        raise Exception("There is no unprocessed clipping!")
+    else:
+        return result
 
 
 def mark_clipping_as_processed(clip: Clipping) -> None:
@@ -147,8 +157,9 @@ def get_clippings_marked_for_skipping() -> List[Clipping]:
 
     for clip in clippings:
         if clip.book_title.startswith(">> "):
+            raw_title = clip.book_title[3:]
             # remove the marker
-            clip.book_title = clip.book_title[3:]
+            clip.book_title = c.TITLE_SWAPS.get(raw_title, raw_title)
             to_skip.append(clip)
 
     return to_skip

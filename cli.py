@@ -32,13 +32,18 @@ def skip_selected():
 @cli.command()
 @click.option('--skip', is_flag=True, help="If specified, the next clipping will be marked as processed but won't actually be posted to twitter")
 @click.option('--only-print', is_flag=True, help="Only print the tweet to console and don't do anything else")
-def post_single_quote(skip, only_print):
+@click.option('--print-next', type=int, help="Only print the next number of tweets to console and don't do anything else")
+def post_single_quote(skip, only_print, print_next):
     """
     Posts a single unprocessed quote to Twitter
     """
 
-    unprocessed_clip = data.get_oldest_unprocessed_clipping()
+    if print_next:
+        for t in data.get_n_oldest_unprocessed_tweets(print_next):
+            print(t)
+        return
 
+    unprocessed_clip = data.get_oldest_unprocessed_clipping()
     if only_print:
         print(unprocessed_clip)
         return
@@ -53,3 +58,13 @@ def post_single_quote(skip, only_print):
         print(Fore.LIGHTCYAN_EX + Back.MAGENTA + unprocessed_clip.body)
 
     data.mark_clipping_as_processed(unprocessed_clip)
+
+
+@cli.command()
+def unfollow_some_unfollowers():
+    twitter.unfollow_unfollowers(50)
+
+
+@cli.command()
+def follow_all_followers():
+    twitter.follow_all_followers()

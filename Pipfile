@@ -7,6 +7,8 @@ name = "pypi"
 click = "*"
 tweepy = "*"
 colorama = "*"
+ipdb = "*"
+tqdm = "*"
 
 [dev-packages]
 autopep8 = "*"
