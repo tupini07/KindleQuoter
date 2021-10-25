@@ -62,9 +62,15 @@ def post_single_quote(skip, only_print, print_next):
 
 @cli.command()
 def unfollow_some_unfollowers():
+    """
+    Unfollow some people that you follow but don't follow you back.
+    """
     twitter.unfollow_unfollowers(50)
 
 
 @cli.command()
 def follow_all_followers():
+    """
+    Follow all that follow you as well as those that have retweeted you
+    """
     twitter.follow_all_followers()
