@@ -61,11 +61,12 @@ def post_single_quote(skip, only_print, print_next):
 
 
 @cli.command()
-def unfollow_some_unfollowers():
+@click.argument('amount', default=50, type=int)
+def unfollow_some_unfollowers(amount):
     """
     Unfollow some people that you follow but don't follow you back.
     """
-    twitter.unfollow_unfollowers(50)
+    twitter.unfollow_unfollowers(amount)
 
 
 @cli.command()

@@ -53,8 +53,16 @@ def is_person_following_me(person_screen_name: str) -> bool:
 
 
 def unfollow_unfollowers(num: int):
+    if not os.path.exists("./data/work_dir"):
+        os.mkdir("./data/work_dir")
+
+    previously_unfollowed_user_ids = []
+    if os.path.exists("./data/work_dir/previously_unfollowed.txt"):
+        previously_unfollowed_user_ids = [s.split(" - ")[0] for s in open(
+            "./data/work_dir/previously_unfollowed.txt", "r").read().split("\n") if s != ""]
+
     tqdm.write(
-        f"Will try to unfollow the oldest '{num}' accounts which are not following back")
+        f"Will try to unfollow the oldest {Fore.CYAN}'{num}' {Fore.RESET}accounts which are not following back")
     all_friends_ids = []
 
     for friend_id in tqdm(_limit_handled(tweepy.Cursor(api.get_friend_ids, count=5000).items())):
@@ -64,18 +72,27 @@ def unfollow_unfollowers(num: int):
     all_friends_ids.reverse()
     processed = 0
     for user_id in all_friends_ids:
+        if user_id in previously_unfollowed_user_ids:
+            tqdm.write(
+                f"{Fore.YELLOW}WARNING: {Fore.WHITE}Not unfollowing {Fore.CYAN}{user_id} {Fore.WHITE}since we had already unfollowed them in the past")
+            continue
+
         relation = _execute_with_timout_handle(
             api.get_friendship, source_id=user_id, target_screen_name=c.USER_SCREEN_NAME)[0]
 
         if not relation.following:
-            tqdm.write(f"Destroying friendship with '{relation.screen_name}'")
+            tqdm.write(
+                f"[{Fore.YELLOW}{processed+1}{Fore.RESET}/{Fore.YELLOW}{num}{Fore.RESET}] Destroying friendship with '{Fore.CYAN}{relation.screen_name}'")
             _execute_with_timout_handle(
                 api.destroy_friendship, user_id=user_id)
             processed += 1
+            with open("./data/work_dir/previously_unfollowed.txt", "a+") as ff:
+                ff.write(f"{user_id} - {relation.screen_name}\n")
             _tqdm_wait(60, "Waiting a minute to prevent flooding Twitter API")
 
         if processed >= num:
-            tqdm.write('Finished unfollowing bad friends')
+            tqdm.write(
+                f'{Fore.YELLOW}Finished unfollowing bad friends - {datetime.now()}')
             break
 
 
