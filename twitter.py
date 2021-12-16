@@ -1,10 +1,13 @@
+import os
 import time
+from colorama.ansi import Fore
+from datetime import datetime
 
 import tweepy
+from tqdm import tqdm
 
 import constants as c
 from data import Clipping
-from tqdm import tqdm
 
 auth = tweepy.OAuthHandler(c.API_KEY, c.API_SECRET_KEY)
 auth.set_access_token(c.ACCESS_TOKEN, c.ACCESS_TOKEN_SECRET)
@@ -27,6 +30,10 @@ def _limit_handled(cursor):
         except tweepy.TooManyRequests:
             _tqdm_wait(
                 _TIMEOUT_WAIT_TIME, f'Timout from Twitter. Waiting {_TIMEOUT_WAIT_TIME} seconds')
+        except tweepy.errors.TweepyException:
+            wait_seconds = 20
+            _tqdm_wait(
+                wait_seconds, f'Misc error while processing. Waiting {wait_seconds} seconds before retrying..')
         except StopIteration:
             return
 
@@ -38,6 +45,10 @@ def _execute_with_timout_handle(func, *args, **kwargs):
         except tweepy.TooManyRequests:
             _tqdm_wait(
                 _TIMEOUT_WAIT_TIME, f'Timout from Twitter. Waiting {_TIMEOUT_WAIT_TIME} seconds')
+        except tweepy.errors.TweepyException:
+            wait_seconds = 20
+            _tqdm_wait(
+                wait_seconds, f'Misc error while processing. Waiting {wait_seconds} seconds before retrying..')
 
 
 def is_person_following_me(person_screen_name: str) -> bool:
@@ -97,8 +108,16 @@ def unfollow_unfollowers(num: int):
 
 
 def follow_all_followers():
+    # follow all followers
+    tqdm.write(f"--- Ensure that we're following all followers ---")
+    for follower in tqdm(_limit_handled(tweepy.Cursor(api.get_followers, count=200).items(400))):
+        if not follower.following:
+            tqdm.write(f"Starting to follow follower user: {follower.name}")
+            _execute_with_timout_handle(follower.follow)
+            _tqdm_wait(60, "Waiting a minute to prevent flooding Twitter API")
+
     # follow all that have retweeted
-    tqdm.write(f"Following all users that have retweeted")
+    tqdm.write(f"--- Following all users that have retweeted ---")
     for tweet in tqdm(_limit_handled(tweepy.Cursor(api.get_retweets_of_me, count=100, trim_user=True, include_entities=False, include_user_entities=False).items())):
         retweeters_ids = [rtid for rtid in _limit_handled(
             tweepy.Cursor(api.get_retweeter_ids, count=100, id=tweet.id).items())]
@@ -113,28 +132,29 @@ def follow_all_followers():
             current_chunk.append(rtid)
 
         for retweeter_ids_in_chunk in retweet_ids_chunks:
-            if len(retweet_ids_chunks == 0):
-                return
-            for retweeter in _execute_with_timout_handle(api.lookup_users, user_id=retweeter_ids_in_chunk, include_entities=False, tweet_mode=False):
-                if not retweeter.following:
-                    tqdm.write(
-                        f"Starting to follow retweeter user: {retweeter.name}")
-                    _execute_with_timout_handle(retweeter.follow)
-                    _tqdm_wait(
-                        60, "Waiting a minute to prevent flooding Twitter API")
+            if len(retweeter_ids_in_chunk) == 0:
+                continue
+
+            try:
+                for retweeter in _execute_with_timout_handle(api.lookup_users, user_id=retweeter_ids_in_chunk, include_entities=False, tweet_mode=False):
+                    if not retweeter.following:
+                        tqdm.write(
+                            f"Starting to follow retweeter user: {retweeter.name}")
+                        try:
+                            _execute_with_timout_handle(retweeter.follow)
+                        except:
+                            raise Exception(
+                                f"Couldn't follow user {retweeter.name} [retweeter.id]")
+                        _tqdm_wait(
+                            60, "Waiting a minute to prevent flooding Twitter API")
+            except tweepy.NotFound:
+                raise Exception(
+                    "Failed to lookup users with ids: " + str(retweeter_ids_in_chunk))
 
     # TODO follow all that have liked
     # tqdm.write(f"Following all users that have liked")
     # for tweet in tqdm(_limit_handled(tweepy.Cursor(api.list_timeline, count=100, trim_user=True, include_entities=False, include_user_entities=False).items())):
     #     pass
-
-    # follow all followers
-    tqdm.write(f"Ensure that we're following all followers")
-    for follower in tqdm(_limit_handled(tweepy.Cursor(api.get_followers, count=200).items(400))):
-        if not follower.following:
-            tqdm.write(f"Starting to follow follower user: {follower.name}")
-            _execute_with_timout_handle(follower.follow)
-            _tqdm_wait(60, "Waiting a minute to prevent flooding Twitter API")
 
 
 def post_tweet(clip: Clipping):
