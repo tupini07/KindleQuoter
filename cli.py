@@ -72,6 +72,16 @@ def unfollow_some_unfollowers(amount):
 @cli.command()
 def follow_all_followers():
     """
-    Follow all that follow you as well as those that have retweeted you
+    Follow all that follow you as well as those that have retweeted you.
     """
     twitter.follow_all_followers()
+
+
+@cli.command()
+@click.option('--amount', type=int, default=100, help="The number of followers to 'follow'")
+@click.argument('handlers', nargs=-1, type=str, required=True)
+def follow_followers_of_others(amount, handlers):
+    """
+    Given the handlers of other users, follow N of their followers that you are not yet following.
+    """
+    twitter.follow_followers_of_others(amount, handlers)

@@ -170,3 +170,24 @@ def post_tweet(clip: Clipping):
 
     print(f"Posting tweet of length: {len(tweet)}")
     api.update_status(tweet)
+
+
+def follow_followers_of_others(target_amount, handlers):
+    num_followed = 0
+    self_id = _execute_with_timout_handle(
+        api.verify_credentials).id
+    for handler in handlers:
+        tqdm.write(f"--- Starting to follow followers of {handler} ---")
+        for follower in tqdm(_limit_handled(tweepy.Cursor(api.get_followers, screen_name=handler, count=200).items())):
+            if (follower.id == self_id):
+                continue
+            if not follower.following and not follower.protected:
+                num_followed += 1
+                tqdm.write(
+                    f"[{num_followed}/{target_amount}] Starting to follow user: {follower.screen_name}")
+                _execute_with_timout_handle(follower.follow)
+                _tqdm_wait(
+                    60, "Waiting a minute to prevent flooding Twitter API")
+
+            if num_followed >= target_amount:
+                return
